@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS variables for palette (updated per-track) */
+:root {
+  --color-bg: #0b0f14;
+  --color-fg: #e6edf3;
+  --color-accent: #1db954;
+  --color-accent-2: #0e7a43;
+  --color-muted: #8b949e;
+
+  --intensity-max-nits: 180;
+}
+
+:root[data-theme='light'] {
+  --color-bg: #f7fafc;
+  --color-fg: #0b0f14;
+  --color-accent: #1db954;
+  --color-accent-2: #0e7a43;
+  --color-muted: #4b5563;
+}
+
+:root[data-contrast='high'] {
+  --intensity-max-nits: 120;
+}
+
+:root[data-epilepsy-safe='on'] {
+  --intensity-max-nits: 90; /* cap brightness */
+}
+
+.bg-surface {
+  background-color: var(--color-bg);
+}
+.text-foreground {
+  color: var(--color-fg);
+}
+
+/* UI elements */
+.btn {
+  @apply px-3 py-2 rounded-md text-sm font-medium bg-neutral-800 hover:bg-neutral-700 text-white disabled:opacity-50;
+}
+.btn-accent {
+  background-color: var(--color-accent);
+  @apply text-black hover:brightness-110;
+}
+.input {
+  @apply bg-neutral-900 text-white px-3 py-2 rounded-md border border-neutral-700 focus:outline-none focus:ring-2 focus:ring-accent;
+}
+.panel {
+  @apply bg-neutral-900/70 backdrop-blur-md border border-neutral-800 rounded-lg p-4;
+}
+
+/* Canvas fills viewport under controls */
+#vis-canvas,
+#vis-container {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Debug overlay */
+#debug-overlay {
+  position: fixed;
+  right: 8px;
+  bottom: 8px;
+  width: min(520px, 90vw);
+  max-height: 70vh;
+  overflow: auto;
+  z-index: 30;
+}

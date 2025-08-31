@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="origin-trial" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0b0f14" />
+    <link rel="icon" href="/try240/icon.svg" />
+    <title>try240 · Spotify Visualizer</title>
+    <script>
+      // GitHub Pages base-path safety if served under /try240/
+      (function () {
+        const base = '/try240/';
+        if (location.hostname.endsWith('github.io') && !location.pathname.startsWith(base)) {
+          if (!location.pathname.startsWith('/try240')) {
+            location.replace(base + (location.pathname.replace(/^\//, '')));
+          }
+        }
+      })();
+    </script>
+  </head>
+  <body class="h-full bg-surface text-foreground antialiased">
+    <div id="root" class="h-full"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
