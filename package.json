@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:ui": "vitest --ui",
+    "pretest:e2e": "playwright install",
     "test:e2e": "playwright test",
     "prepare": "husky install",
     "deploy": "vite build && echo 'Build complete. Deployment handled by GitHub Actions (gh-pages) on push to main.'",
