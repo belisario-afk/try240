@@ -1,21 +1,20 @@
 import { test, expect } from '@playwright/test';
 
 test('mock flow: load -> switch scene -> start/stop recording UI keybinds', async ({ page }) => {
-  // Navigate relative to baseURL so it resolves to /try240/ in CI
-  await page.goto('./', { waitUntil: 'domcontentloaded' });
+  // Preview serves index at '/', so go there.
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-  // The container exists outside the router; wait for it to be attached (not necessarily "visible")
+  // App renders #vis-container outside the router; wait for it to be in the DOM.
   await page.waitForSelector('#vis-container', { state: 'attached', timeout: 30000 });
 
-  // Wait for the visual engine to mount a canvas inside the container
+  // Visual engine should mount a canvas inside the container shortly after boot.
   await page.locator('#vis-container canvas').first().waitFor({ timeout: 30000 });
 
-  // Open scene picker
+  // Open scene picker and choose a scene
   const scenesButton = page.getByRole('button', { name: /scenes/i });
   await scenesButton.waitFor({ timeout: 30000 });
   await scenesButton.click();
 
-  // Click a scene (be tolerant of available names)
   const sceneChoice = page.getByRole('button', { name: /particles|terrain|fluid|raymarch|typography/i });
   if (await sceneChoice.count()) {
     await sceneChoice.first().click();
@@ -25,7 +24,6 @@ test('mock flow: load -> switch scene -> start/stop recording UI keybinds', asyn
   await page.keyboard.press('r');
   await page.keyboard.press('r');
 
-  // Assert at least one canvas is present (engine running)
-  const canvasCount = await page.locator('#vis-container canvas').count();
-  expect(canvasCount).toBeGreaterThan(0);
+  // Sanity: at least one canvas is present
+  expect(await page.locator('#vis-container canvas').count()).toBeGreaterThan(0);
 });
