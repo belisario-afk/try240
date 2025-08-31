@@ -26,8 +26,7 @@ jobs:
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
+        # No "version" here; action will use package.json's packageManager (pnpm@9.10.0)
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -75,19 +74,23 @@ jobs:
     needs: build-test
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
+        # No "version" here; action will use package.json's packageManager (pnpm@9.10.0)
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
+
       - name: Install
         run: pnpm install --frozen-lockfile
+
       - name: Install browsers
         run: npx playwright install --with-deps
+
       - name: Run e2e tests
         run: pnpm test:e2e
         env:
