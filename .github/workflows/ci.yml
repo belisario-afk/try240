@@ -26,7 +26,7 @@ jobs:
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
-        # No "version" here; action will use package.json's packageManager (pnpm@9.10.0)
+        # Uses version from package.json "packageManager"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -63,10 +63,14 @@ jobs:
         if: always()
         run: node ./scripts/print-bundle-stats.cjs || true
 
+      # Upload Pages artifact only once (avoid 409 conflict across matrix)
       - name: Upload dist artifact
+        if: ${{ matrix.node == '20' && github.event_name == 'push' }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+          # Give it a unique name and reference it in deploy step
+          name: github-pages-20
 
   e2e:
     name: Playwright E2E (mock)
@@ -77,7 +81,6 @@ jobs:
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
-        # No "version" here; action will use package.json's packageManager (pnpm@9.10.0)
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -107,3 +110,5 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-20
