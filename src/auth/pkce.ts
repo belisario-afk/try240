@@ -31,7 +31,12 @@ const safeSession: StorageLike = (() => {
 
 function randomString(length = 64) {
   const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
+  if ((globalThis as any).crypto?.getRandomValues) {
+    (globalThis as any).crypto.getRandomValues(array);
+  } else {
+    // Non-crypto fallback for environments without Web Crypto (tests)
+    for (let i = 0; i < length; i++) array[i] = Math.floor(Math.random() * 256);
+  }
   return Array.from(array)
     .map((b) => ('0' + b.toString(16)).slice(-2))
     .join('');
@@ -40,16 +45,35 @@ function randomString(length = 64) {
 async function sha256(plain: string): Promise<ArrayBuffer> {
   const encoder = new TextEncoder();
   const data = encoder.encode(plain);
-  return await crypto.subtle.digest('SHA-256', data);
+
+  const c: any = (globalThis as any).crypto;
+  if (c?.subtle?.digest) {
+    return await c.subtle.digest('SHA-256', data);
+  }
+
+  // Node fallback (dynamic import to avoid bundling issues in browser)
+  try {
+    const nodeCrypto = await import('node:crypto');
+    const buf = nodeCrypto.createHash('sha256').update(Buffer.from(data)).digest();
+    // Return an ArrayBuffer view of the Buffer
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  } catch {
+    throw new Error('No crypto implementation available for SHA-256.');
+  }
 }
 
-function base64url(input: ArrayBuffer) {
-  const bytes = new Uint8Array(input);
-  let str = '';
-  for (let i = 0; i < bytes.length; i++) {
-    str += String.fromCharCode((bytes as any)[i] as number);
+function base64url(input: ArrayBuffer | Uint8Array) {
+  const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+  let b64: string;
+  if (typeof Buffer !== 'undefined' && (Buffer as any).from && typeof process !== 'undefined' && (process as any).versions?.node) {
+    b64 = Buffer.from(bytes).toString('base64');
+  } else {
+    // Browser path
+    let bin = '';
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i] as number);
+    b64 = btoa(bin);
   }
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 export async function createPKCE() {
