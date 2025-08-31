@@ -9,17 +9,17 @@ export default defineConfig({
   fullyParallel: true,
   retries: isCI ? 1 : 0,
   use: {
-    // IMPORTANT: preview serves index at '/', not '/try240/'
-    baseURL: 'http://127.0.0.1:5173/',
+    // Hit the app at its production base path
+    baseURL: 'http://127.0.0.1:5173/try240/',
     headless: true,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'pnpm preview --host 127.0.0.1 --port 5173',
-    // Wait for root. Assets referenced with /try240/... will still resolve.
-    url: 'http://127.0.0.1:5173/',
+    // Serve dist/ with matching base so index and assets resolve
+    command: 'pnpm preview --host 127.0.0.1 --port 5173 --base /try240/',
+    url: 'http://127.0.0.1:5173/try240/',
     timeout: 120_000,
     reuseExistingServer: false,
   },

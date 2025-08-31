@@ -1,20 +1,24 @@
 import { test, expect } from '@playwright/test';
 
 test('mock flow: load -> switch scene -> start/stop recording UI keybinds', async ({ page }) => {
-  // Preview serves index at '/', so go there.
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  // Navigate relative to baseURL (/try240/)
+  await page.goto('./', { waitUntil: 'domcontentloaded' });
 
-  // App renders #vis-container outside the router; wait for it to be in the DOM.
+  // Ensure the app bootstraps
+  await page.waitForSelector('#root', { state: 'attached', timeout: 30000 });
+
+  // App renders the visual container outside the router
   await page.waitForSelector('#vis-container', { state: 'attached', timeout: 30000 });
 
-  // Visual engine should mount a canvas inside the container shortly after boot.
+  // Engine mounts a canvas shortly after boot
   await page.locator('#vis-container canvas').first().waitFor({ timeout: 30000 });
 
-  // Open scene picker and choose a scene
+  // Open scene picker
   const scenesButton = page.getByRole('button', { name: /scenes/i });
   await scenesButton.waitFor({ timeout: 30000 });
   await scenesButton.click();
 
+  // Select a scene (tolerant to naming)
   const sceneChoice = page.getByRole('button', { name: /particles|terrain|fluid|raymarch|typography/i });
   if (await sceneChoice.count()) {
     await sceneChoice.first().click();
@@ -24,6 +28,6 @@ test('mock flow: load -> switch scene -> start/stop recording UI keybinds', asyn
   await page.keyboard.press('r');
   await page.keyboard.press('r');
 
-  // Sanity: at least one canvas is present
+  // Sanity: canvas present
   expect(await page.locator('#vis-container canvas').count()).toBeGreaterThan(0);
 });
