@@ -1,40 +1,16 @@
-/* Ensure Web Crypto and btoa are available in Vitest (Node) */
+import { webcrypto } from 'node:crypto';
 
-function ensureWebCrypto() {
-  const g = globalThis as any;
-  if (g.crypto?.subtle && g.crypto?.getRandomValues) {
-    return; // already present
-  }
-  try {
-    // Node 16+/18+/20+
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { webcrypto } = require('node:crypto');
-    if (webcrypto?.subtle && webcrypto?.getRandomValues) {
-      g.crypto = webcrypto;
-      return;
-    }
-  } catch {
-    // ignore and try next fallback
-  }
-  try {
-    // Fallback for older Node: pure JS implementation
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { Crypto } = require('@peculiar/webcrypto');
-    g.crypto = new Crypto();
-  } catch (e) {
-    // Final fallback — your tests that rely on crypto.subtle will fail, but at least the message is clear.
-    console.warn(
-      '[vitest.polyfills] Failed to polyfill Web Crypto. Install @peculiar/webcrypto: pnpm add -D @peculiar/webcrypto'
-    );
-  }
+// Polyfill Web Crypto for Node test environment
+if (!(globalThis as any).crypto) {
+  (globalThis as any).crypto = webcrypto as unknown as Crypto;
 }
 
-function ensureBtoa() {
-  const g = globalThis as any;
-  if (!g.btoa) {
-    g.btoa = (str: string) => Buffer.from(str, 'binary').toString('base64');
-  }
+// Polyfill btoa/atob for Node
+if (!(globalThis as any).btoa) {
+  (globalThis as any).btoa = (str: string) =>
+    Buffer.from(str, 'binary').toString('base64');
 }
-
-ensureWebCrypto();
-ensureBtoa();
+if (!(globalThis as any).atob) {
+  (globalThis as any).atob = (b64: string) =>
+    Buffer.from(b64, 'base64').toString('binary');
+}
