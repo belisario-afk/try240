@@ -2,8 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const isCI = !!process.env.CI;
 
-// In preview (serving built dist), the app is hosted under /try240/ due to Vite base.
-// Make baseURL point there so page.goto('/') resolves correctly.
+// The built app is served by Vite preview at /try240/ (Vite base).
 const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173/try240/';
 
 export default defineConfig({
@@ -17,7 +16,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  // Serve the built app with Vite preview for reliability in CI
+  // Serve dist/ for tests to avoid dev-server flakiness
   webServer: {
     command: 'pnpm preview --host 127.0.0.1 --port 5173',
     url: 'http://127.0.0.1:5173/try240/',
