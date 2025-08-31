@@ -26,23 +26,12 @@ jobs:
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
-        # Uses version from package.json "packageManager"
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
           cache: 'pnpm'
-
-      - name: Cache Vite
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.vite
-            node_modules/.cache
-          key: ${{ runner.os }}-vite-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-vite-
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -59,17 +48,17 @@ jobs:
           SPOTIFY_CLIENT_ID: 927fda6918514f96903e828fcd6bb576
           MOCK: true
 
-      - name: Bundle analyzer
-        if: always()
-        run: node ./scripts/print-bundle-stats.cjs || true
+      # Add SPA fallback page so deep links like /try240/callback work on GitHub Pages
+      - name: Create 404 fallback
+        if: ${{ matrix.node == '20' && github.event_name == 'push' }}
+        run: cp dist/index.html dist/404.html
 
-      # Upload Pages artifact only once (avoid 409 conflict across matrix)
+      # Upload only once to avoid 409 conflicts
       - name: Upload dist artifact
         if: ${{ matrix.node == '20' && github.event_name == 'push' }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
-          # Give it a unique name and reference it in deploy step
           name: github-pages-20
 
   e2e:
@@ -78,22 +67,17 @@ jobs:
     needs: build-test
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
-
       - name: Install
         run: pnpm install --frozen-lockfile
-
       - name: Install browsers
         run: npx playwright install --with-deps
-
       - name: Run e2e tests
         run: pnpm test:e2e
         env:
