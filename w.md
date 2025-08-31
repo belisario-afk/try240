@@ -1,8 +1,5 @@
-### Token-Exchange Proxy (Serverless)
+### Token-Exchange Proxy (Cloudflare Worker)
 
-Deploy one of these minimal proxies:
-
-1) Cloudflare Worker (recommended)
 ```js
 export default {
   async fetch(req) {
@@ -22,4 +19,8 @@ export default {
   }
 }
 ```
-Set `TOKEN_EXCHANGE_URL=https://<your-worker>.workers.dev/api/token` for production.
+
+Set in production:
+```
+TOKEN_EXCHANGE_URL=https://<your-worker>.workers.dev/api/token
+```
