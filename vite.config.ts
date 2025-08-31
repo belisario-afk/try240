@@ -16,11 +16,11 @@ export default defineConfig(({ mode }) => {
         warnDuplicatedImports: false,
         include: ['**/*.glsl', '**/*.vert', '**/*.frag'],
       }),
+      // Run only TypeScript checker; ESLint runs via `pnpm lint` separately.
       checker({
         typescript: true,
-        eslint: {
-          lintCommand: 'eslint "./src/**/*.{ts,tsx}"',
-        },
+        // Disable ESLint integration to avoid ESLint v9 option incompatibility during Vitest/Vite runs
+        // eslint: { lintCommand: 'eslint "./src/**/*.{ts,tsx}"' },
       }),
     ],
     server: {
@@ -28,7 +28,6 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: true,
       proxy: {
-        // Optional local dev proxy to bypass CORS for Spotify token exchange using PKCE (no client secret).
         '/api/token': {
           target: 'https://accounts.spotify.com',
           changeOrigin: true,
