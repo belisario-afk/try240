@@ -7,9 +7,9 @@ const CLIENT_ID = ENV.SPOTIFY_CLIENT_ID;
 const TOKEN_EXCHANGE_URL = ENV.TOKEN_EXCHANGE_URL;
 
 export function getRedirectUri() {
-  // Use hash route on GitHub Pages to avoid 404 on deep links
+  // On GitHub Pages, use a path (no hash) and rely on 404.html SPA fallback.
   if (location.hostname.endsWith('github.io')) {
-    return `${location.origin}/try240/#/callback`;
+    return `${location.origin}/try240/callback`;
   }
   return `${location.protocol}//${location.host}/callback`;
 }
@@ -135,7 +135,6 @@ export async function api<T>(path: string, init?: RequestInit, retry = 0): Promi
     const text = await res.text();
     throw new Error(`${res.status} ${text}`);
   }
-  // When no body, return undefined as any
   if (res.status === 204) return undefined as unknown as T;
   return res.json();
 }
@@ -223,17 +222,13 @@ export function logoutAndClear() {
     sessionStorage.removeItem('pkce_verifier');
   } catch {}
   const s = useAppStore.getState();
-  // Clear tokens and reset player state
-  // Casting to any to avoid coupling to store's exact types
   (s as any).setTokens?.(undefined);
   s.setPlayer({ playing: false, positionMs: 0, deviceId: undefined as any });
-  // Navigate to home
   if (location.hostname.endsWith('github.io')) {
     location.hash = '#/';
   } else {
     location.assign('/');
   }
-  // Optionally disconnect SDK
   try {
     // @ts-ignore
     player?.disconnect?.();
