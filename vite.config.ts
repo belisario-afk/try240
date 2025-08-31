@@ -10,6 +10,14 @@ export default defineConfig(({ mode }) => {
 
   return {
     base,
+    define: {
+      __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.0.0'),
+      __MOCK__: JSON.stringify(env.MOCK ?? ''),
+      __SENTRY_DSN__: JSON.stringify(env.SENTRY_DSN ?? ''),
+      __SPOTIFY_CLIENT_ID__: JSON.stringify(env.SPOTIFY_CLIENT_ID ?? ''),
+      __TOKEN_EXCHANGE_URL__: JSON.stringify(env.TOKEN_EXCHANGE_URL ?? '/api/token'),
+      __ENABLE_WEBGPU__: JSON.stringify(env.ENABLE_WEBGPU ?? 'false')
+    },
     plugins: [
       preact(),
       glsl({ include: ['**/*.glsl', '**/*.vert', '**/*.frag'] }),

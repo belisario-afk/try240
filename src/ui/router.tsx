@@ -1,41 +1,38 @@
-import { ComponentType } from 'preact';
+import { h } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 
-type RouteProps = { path: string; component: ComponentType<any> };
-const routes: RouteProps[] = [];
-
-export function Route(_props: RouteProps) {
-  return null;
+function getPath() {
+  return location.hash.replace(/^#/, '') || '/';
 }
 
-function matchRoute(pathname: string) {
-  const path = pathname.replace(/^#/, '').replace(/^\/try240\//, '/');
-  const url = new URL(path, location.origin);
-  const pathnameOnly = url.pathname;
-  return routes.find((r) => r.path === pathnameOnly) ?? routes.find((r) => r.path === '/');
-}
-
-export function Router(props: { children: any }) {
-  const [node, setNode] = useState<preact.VNode | null>(null);
+export function Router({ children }: { children: any }) {
+  const [path, setPath] = useState(getPath());
 
   useEffect(() => {
-    const reg = (child: any) => {
-      if (child?.type?.name === 'Route') {
-        routes.push({ path: child.props.path, component: child.props.component });
-      }
-      if (child?.props?.children) ([] as any[]).concat(child.props.children).forEach(reg);
-    };
-    ([] as any[]).concat(props.children).forEach(reg);
+    // Ensure we land on Home by default so the app actually renders a route.
+    if (!location.hash) {
+      location.replace('#/');
+      // setPath will update on hashchange below
+    } else {
+      setPath(getPath());
+    }
+    const onHash = () => setPath(getPath());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
 
-    const renderRoute = () => {
-      const m = matchRoute(location.hash || '#/');
-      const C = m?.component;
-      setNode(C ? (/* @ts-ignore */ <C />) : null);
-    };
-    window.addEventListener('hashchange', renderRoute);
-    renderRoute();
-    return () => window.removeEventListener('hashchange', renderRoute);
-  }, [props.children]);
+  const kids = Array.isArray(children) ? children : [children];
+  let match: any = null;
+  for (const child of kids) {
+    if (child && child.props && child.props.path === path) {
+      match = child;
+      break;
+    }
+  }
+  return match ? h(match.props.component, {}) : null;
+}
 
-  return node;
+export function Route(_props: { path: string; component: any }) {
+  // Marker component; Router reads its props
+  return null;
 }

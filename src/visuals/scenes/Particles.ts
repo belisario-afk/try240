@@ -35,7 +35,6 @@ export class SceneParticles {
       blending: THREE.AdditiveBlending,
       vertexShader: `
       uniform float u_time; uniform float u_intensity;
-      attribute vec3 position;
       varying float vA;
       void main() {
         vec3 p = position;

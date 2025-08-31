@@ -1,34 +1,37 @@
+import { useState } from 'preact/hooks';
 import { useAppStore } from '../../store/store';
 
+const SCENES = ['particles', 'terrain', 'fluid', 'raymarch', 'typography'] as const;
+
 export function ScenePicker() {
-  const scenes = useAppStore((s) => s.scenes);
-  const setActive = useAppStore((s) => s.setActiveScene);
-  const schedule = useAppStore((s) => s.scheduleScene);
+  const [open, setOpen] = useState(false);
+  const active = useAppStore((s) => s.scenes.active);
+  const setActiveScene = useAppStore((s) => s.setActiveScene);
 
   return (
-    <section class="panel">
-      <h2 class="text-sm font-semibold mb-2">Scenes</h2>
-      <div class="flex flex-wrap gap-2">
-        {scenes.available.map((id) => (
-          <button
-            key={id}
-            class={'btn ' + (id === scenes.active ? 'btn-accent' : '')}
-            onClick={() => schedule(id)}
-            title="Schedules crossfade at phrase boundary"
-          >
-            {id}
-          </button>
-        ))}
-      </div>
-      <div class="text-xs opacity-80 mt-2">
-        Active: <b>{scenes.active}</b>
-        {scenes.next ? (
-          <>
-            {' '}
-            → Next at phrase: <b>{scenes.next}</b>
-          </>
-        ) : null}
-      </div>
-    </section>
+    <div class="panel">
+      <button
+        type="button"
+        class="btn w-full"
+        aria-label="Scenes"
+        onClick={() => setOpen((v) => !v)}
+      >
+        Scenes
+      </button>
+      {open && (
+        <div class="mt-2 grid grid-cols-2 gap-2">
+          {SCENES.map((name) => (
+            <button
+              key={name}
+              type="button"
+              class={`btn ${active === name ? 'btn-accent' : ''}`}
+              onClick={() => setActiveScene(name)}
+            >
+              {name.charAt(0).toUpperCase() + name.slice(1)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

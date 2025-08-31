@@ -1,9 +1,10 @@
 import { useAppStore } from '../store/store';
 import { createPKCE, getPKCEVerifier } from './pkce';
 import { backoff } from '../utils/network';
+import * as ENV from '../env';
 
-const CLIENT_ID = __SPOTIFY_CLIENT_ID__;
-const TOKEN_EXCHANGE_URL = __TOKEN_EXCHANGE_URL__;
+const CLIENT_ID = ENV.SPOTIFY_CLIENT_ID;
+const TOKEN_EXCHANGE_URL = ENV.TOKEN_EXCHANGE_URL;
 
 export function getRedirectUri() {
   // Use hash-router callback
@@ -25,7 +26,7 @@ export function getScopes(): string[] {
 }
 
 export async function loginWithSpotify() {
-  const { challenge, verifier } = await createPKCE();
+  const { challenge } = await createPKCE();
   const state = crypto.randomUUID();
   sessionStorage.setItem('oauth_state', state);
   const params = new URLSearchParams({
@@ -57,7 +58,7 @@ export async function exchangeCodeForToken() {
     code_verifier
   });
 
-  // Use token-exchange endpoint (proxy) to avoid CORS. For dev, vite proxy handles /api/token.
+  // Use token-exchange endpoint (proxy). In dev, vite proxy can handle /api/token.
   const res = await fetch(TOKEN_EXCHANGE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -89,11 +90,13 @@ export async function refreshTokenIfNeeded() {
   if (!t) return;
   if (!tokenExpired(t)) return;
   if (!t.refresh_token) return;
+
   const body = new URLSearchParams({
     client_id: CLIENT_ID,
     grant_type: 'refresh_token',
     refresh_token: t.refresh_token
   });
+
   const res = await fetch(TOKEN_EXCHANGE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -148,7 +151,7 @@ export async function ensurePlayer() {
     // @ts-ignore
     window.onSpotifyWebPlaybackSDKReady = () => {
       // @ts-ignore
-      player = new window.Spotify.Player({
+      player = new (window as any).Spotify.Player({
         name: 'try240 Visualizer Player',
         getOAuthToken: (cb: (t: string) => void) => cb(token),
         volume: useAppStore.getState().player.volume
@@ -216,6 +219,7 @@ export async function seek(positionMs: number) {
 export async function setVolume(volume: number) {
   await api(`/me/player/volume?volume_percent=${Math.round(volume * 100)}`, { method: 'PUT' });
 }
+
 export function logoutAndClear() {
   useAppStore.getState().setTokens(undefined);
   location.hash = '#/';

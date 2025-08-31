@@ -1,11 +1,11 @@
-import { useEffect } from 'preact/hooks';
+import { useLayoutEffect } from 'preact/hooks';
 import { initVisualEngine } from '../visuals/engine';
 import { useAppStore } from '../store/store';
 
 export function Home() {
   const mock = useAppStore((s) => s.env.mock);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const container = document.getElementById('vis-container')!;
     const stop = initVisualEngine(container);
     return () => stop?.();

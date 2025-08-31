@@ -1,4 +1,4 @@
-import { useEffect } from 'preact/hooks';
+import { useLayoutEffect } from 'preact/hooks';
 import { useAppStore } from '../store/store';
 import { connectAudioAnalysis } from '../processing/analysis';
 import { initVisualEngine } from '../visuals/engine';
@@ -8,7 +8,7 @@ import { setupRecorderControls } from '../recorder/recorder';
 export function Player() {
   const tokens = useAppStore((s) => s.tokens);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const container = document.getElementById('vis-container')!;
     const stopVis = initVisualEngine(container);
     const disconnect = connectAudioAnalysis();
