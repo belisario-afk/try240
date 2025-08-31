@@ -34,7 +34,7 @@ function randomString(length = 64) {
   if ((globalThis as any).crypto?.getRandomValues) {
     (globalThis as any).crypto.getRandomValues(array);
   } else {
-    // Non-crypto fallback for environments without Web Crypto (tests)
+    // Non-crypto fallback for environments without Web Crypto (e.g. tests without polyfill)
     for (let i = 0; i < length; i++) array[i] = Math.floor(Math.random() * 256);
   }
   return Array.from(array)
@@ -51,28 +51,18 @@ async function sha256(plain: string): Promise<ArrayBuffer> {
     return await c.subtle.digest('SHA-256', data);
   }
 
-  // Node fallback (dynamic import to avoid bundling issues in browser)
-  try {
-    const nodeCrypto = await import('node:crypto');
-    const buf = nodeCrypto.createHash('sha256').update(Buffer.from(data)).digest();
-    // Return an ArrayBuffer view of the Buffer
-    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
-  } catch {
-    throw new Error('No crypto implementation available for SHA-256.');
-  }
+  throw new Error('Web Crypto unavailable: crypto.subtle.digest is required. In tests, polyfill globalThis.crypto.');
 }
 
 function base64url(input: ArrayBuffer | Uint8Array) {
   const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
-  let b64: string;
-  if (typeof Buffer !== 'undefined' && (Buffer as any).from && typeof process !== 'undefined' && (process as any).versions?.node) {
-    b64 = Buffer.from(bytes).toString('base64');
-  } else {
-    // Browser path
-    let bin = '';
-    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i] as number);
-    b64 = btoa(bin);
-  }
+  // Browser-safe base64; avoids Buffer usage in browser bundles
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i] as number);
+  const b64 = (globalThis as any).btoa
+    ? (globalThis as any).btoa(bin)
+    : // Minimal fallback if btoa is missing (Node tests). Vitest setup provides btoa; this is a last resort.
+      Buffer.from(bytes).toString('base64');
   return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
