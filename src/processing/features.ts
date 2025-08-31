@@ -29,12 +29,15 @@ export function computeChroma(logFft: Float32Array, out12: Float32Array) {
   return out12;
 }
 
-export function estimateTempo(onsetEnv: Float32Array, sampleRate: number) {
-  // Placeholder autocorrelation tempo
-  let bestLag = 0;
+export function estimateTempo(onsetEnv: Float32Array, sampleRate: number, minBPM = 60, maxBPM = 240) {
+  // Autocorrelation over a BPM window -> pick the best lag
+  // Convert BPM bounds to sample lags
+  const minLag = Math.max(1, Math.floor((sampleRate * 60) / maxBPM)); // e.g., sr=100 -> 25 for 240 BPM
+  const maxLag = Math.max(minLag + 1, Math.floor((sampleRate * 60) / minBPM)); // e.g., sr=100 -> 100 for 60 BPM
+
+  let bestLag = minLag;
   let best = -Infinity;
-  const minLag = Math.floor(sampleRate / 240);
-  const maxLag = Math.floor(sampleRate / 60);
+
   for (let lag = minLag; lag <= maxLag; lag++) {
     let sum = 0;
     for (let i = lag; i < onsetEnv.length; i++) {
@@ -47,6 +50,7 @@ export function estimateTempo(onsetEnv: Float32Array, sampleRate: number) {
       bestLag = lag;
     }
   }
+
   const bpm = (60 * sampleRate) / (bestLag || 1);
   return bpm;
 }
