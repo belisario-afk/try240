@@ -13,7 +13,7 @@
     "preview": "vite preview --host",
     "lint": "eslint . --ext .ts,.tsx,.cts,.mts --fix",
     "format": "prettier --write .",
-    "test": "vitest run",
+    "test": "vitest run tests/unit",
     "test:ui": "vitest --ui",
     "pretest:e2e": "pnpm build && pnpm exec playwright install",
     "test:e2e": "playwright test",
