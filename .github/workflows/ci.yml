@@ -48,12 +48,10 @@ jobs:
           SPOTIFY_CLIENT_ID: 927fda6918514f96903e828fcd6bb576
           MOCK: true
 
-      # Add SPA fallback page so deep links like /try240/callback work on GitHub Pages
-      - name: Create 404 fallback
+      - name: Create 404 fallback (SPA)
         if: ${{ matrix.node == '20' && github.event_name == 'push' }}
         run: cp dist/index.html dist/404.html
 
-      # Upload only once to avoid 409 conflicts
       - name: Upload dist artifact
         if: ${{ matrix.node == '20' && github.event_name == 'push' }}
         uses: actions/upload-pages-artifact@v3
@@ -76,23 +74,16 @@ jobs:
           cache: 'pnpm'
       - name: Install
         run: pnpm install --frozen-lockfile
-      - name: Install browsers
-        run: npx playwright install --with-deps
-      - name: Run e2e tests
-        run: pnpm test:e2e
+
+      # Build the app for preview; MOCK must be defined at build time
+      - name: Build (mock)
+        run: pnpm build
         env:
           MOCK: true
+          SPOTIFY_CLIENT_ID: 927fda6918514f96903e828fcd6bb576
 
-  deploy:
-    if: github.ref == 'refs/heads/main'
-    needs: [build-test, e2e]
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        with:
-          artifact_name: github-pages-20
+      - name: Install browsers
+        run: npx playwright install --with-deps
+
+      - name: Run e2e tests
+        run: pnpm test:e2e
