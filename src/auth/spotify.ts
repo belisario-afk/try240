@@ -7,9 +7,9 @@ const CLIENT_ID = ENV.SPOTIFY_CLIENT_ID;
 const TOKEN_EXCHANGE_URL = ENV.TOKEN_EXCHANGE_URL;
 
 export function getRedirectUri() {
-  // Use hash-router callback
+  // Use hash route on GitHub Pages to avoid 404 on deep links
   if (location.hostname.endsWith('github.io')) {
-    return `${location.origin}/try240/callback`;
+    return `${location.origin}/try240/#/callback`;
   }
   return `${location.protocol}//${location.host}/callback`;
 }
@@ -58,7 +58,6 @@ export async function exchangeCodeForToken() {
     code_verifier
   });
 
-  // Use token-exchange endpoint (proxy). In dev, vite proxy can handle /api/token.
   const res = await fetch(TOKEN_EXCHANGE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -136,6 +135,8 @@ export async function api<T>(path: string, init?: RequestInit, retry = 0): Promi
     const text = await res.text();
     throw new Error(`${res.status} ${text}`);
   }
+  // When no body, return undefined as any
+  if (res.status === 204) return undefined as unknown as T;
   return res.json();
 }
 
@@ -183,44 +184,59 @@ async function loadSpotifySDK() {
   document.body.appendChild(s);
 }
 
-export async function getAvailableDevices(): Promise<{ id: string; name: string; is_active: boolean }[]> {
-  const data = await api<{ devices: { id: string; name: string; is_active: boolean }[] }>('/me/player/devices');
-  return data.devices;
+export type Device = { id: string; name: string; is_active: boolean };
+
+export async function getAvailableDevices(): Promise<Device[]> {
+  const data = await api<{ devices: Array<{ id: string; name: string; is_active: boolean }> }>(
+    '/me/player/devices',
+    { method: 'GET' }
+  );
+  return (data.devices || []).map((d) => ({ id: d.id, name: d.name, is_active: d.is_active }));
 }
 
-export async function transferPlaybackToDevice(deviceId: string) {
-  return api('/me/player', {
-    method: 'PUT',
-    body: JSON.stringify({ device_ids: [deviceId], play: false })
-  });
-}
-
-export async function play() {
-  const st = useAppStore.getState();
-  const deviceId = st.player.deviceId;
-  if (player && deviceId) {
-    await transferPlaybackToDevice(deviceId);
-    await api(`/me/player/play?device_id=${encodeURIComponent(deviceId)}`, { method: 'PUT' });
-    st.setPlayer({ playing: true });
-  } else {
-    throw new Error('Player not initialized or device not selected.');
-  }
+export async function play(deviceId?: string) {
+  const qs = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : '';
+  await api<void>(`/me/player/play${qs}`, { method: 'PUT' });
+  useAppStore.getState().setPlayer({ playing: true });
 }
 
 export async function pause() {
-  await api('/me/player/pause', { method: 'PUT' });
+  await api<void>('/me/player/pause', { method: 'PUT' });
   useAppStore.getState().setPlayer({ playing: false });
 }
 
 export async function seek(positionMs: number) {
-  await api(`/me/player/seek?position_ms=${Math.round(positionMs)}`, { method: 'PUT' });
+  const qs = `?position_ms=${Math.max(0, Math.floor(positionMs))}`;
+  await api<void>(`/me/player/seek${qs}`, { method: 'PUT' });
+  useAppStore.getState().setPlayer({ positionMs: Math.max(0, Math.floor(positionMs)) });
 }
 
-export async function setVolume(volume: number) {
-  await api(`/me/player/volume?volume_percent=${Math.round(volume * 100)}`, { method: 'PUT' });
+export async function setVolume(v: number) {
+  const percent = Math.round(Math.min(1, Math.max(0, v)) * 100);
+  await api<void>(`/me/player/volume?volume_percent=${percent}`, { method: 'PUT' });
+  useAppStore.getState().setPlayer({ volume: percent / 100 });
 }
 
 export function logoutAndClear() {
-  useAppStore.getState().setTokens(undefined);
-  location.hash = '#/';
+  try {
+    sessionStorage.removeItem('oauth_state');
+    sessionStorage.removeItem('pkce_verifier');
+  } catch {}
+  const s = useAppStore.getState();
+  // Clear tokens and reset player state
+  // Casting to any to avoid coupling to store's exact types
+  (s as any).setTokens?.(undefined);
+  s.setPlayer({ playing: false, positionMs: 0, deviceId: undefined as any });
+  // Navigate to home
+  if (location.hostname.endsWith('github.io')) {
+    location.hash = '#/';
+  } else {
+    location.assign('/');
+  }
+  // Optionally disconnect SDK
+  try {
+    // @ts-ignore
+    player?.disconnect?.();
+  } catch {}
+  player = null;
 }
